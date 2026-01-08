@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Maximize2, Wand2, X, Check, Users, Sparkles, LayoutGrid, ChevronRight } from 'lucide-react';
+import { Download, Maximize2, Wand2, X, Check, Users, Sparkles, LayoutGrid, ChevronRight, ImageMinus } from 'lucide-react';
 import { GeneratedImage } from '../types';
 
 interface ImageViewerProps {
@@ -9,6 +9,7 @@ interface ImageViewerProps {
   onEdit?: (prompt: string) => void;
   onConsistentGenerate?: (prompt: string) => void;
   onSelectImage?: (image: GeneratedImage) => void;
+  onExtractBackground?: (imageUrl: string) => void; // New prop
 }
 
 export const ImageViewer: React.FC<ImageViewerProps> = ({ 
@@ -17,7 +18,8 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   onEdit, 
   onConsistentGenerate,
   history = [],
-  onSelectImage
+  onSelectImage,
+  onExtractBackground
 }) => {
   const [activeMode, setActiveMode] = useState<'none' | 'edit' | 'consistent'>('none');
   const [promptText, setPromptText] = useState("");
@@ -114,6 +116,17 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
               
               {/* Quick Actions Overlay */}
               <div className="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {/* Extract Background Button */}
+                {onExtractBackground && (
+                  <button
+                    onClick={() => onExtractBackground(imageUrl)}
+                    className="p-3 rounded-full shadow-lg transition-colors border-2 bg-white text-black border-transparent hover:bg-emerald-50 hover:text-emerald-700"
+                    title="이 이미지에서 배경만 추출 (장소 레퍼런스 추가)"
+                  >
+                    <ImageMinus size={20} />
+                  </button>
+                )}
+
                 {/* Consistent Character Gen Button */}
                 <button 
                   onClick={() => toggleMode('consistent')}

@@ -10,6 +10,7 @@ export type ImageResolution = "1K" | "2K" | "4K";
 
 export type GridCount = 1 | 2 | 3 | 4 | 6 | 9;
 export type GridSizing = 'uniform' | 'random';
+export type LayoutMode = 'grid' | 'profile_spread';
 
 export interface LensConfig {
   id: string;
@@ -39,7 +40,8 @@ export interface GenerationSettings {
   // Model Character Settings
   model: ModelSettings;
 
-  // Grid / Layout settings
+  // Layout settings
+  layoutMode: LayoutMode; // 'grid' or 'profile_spread'
   gridCount: GridCount;
   gridSizing: GridSizing;
   

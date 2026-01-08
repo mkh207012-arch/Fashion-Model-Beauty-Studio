@@ -205,6 +205,22 @@ function getBaseStylePrompt(lens: LensConfig, settings?: GenerationSettings): st
 }
 
 function getGridPrompt(settings: GenerationSettings): string {
+  if (settings.layoutMode === 'profile_spread') {
+     return `
+      FORMAT: Character Reference Sheet / Model Profile Card (Comp Card).
+      Canvas Ratio: 16:9.
+      LAYOUT: Three distinct sections arranged horizontally (Left, Center, Right).
+      
+      COMPOSITION:
+      1. LEFT SECTION: Extreme Close-up of the face (Beauty Shot). Focus on makeup, skin texture, and eye expression.
+      2. CENTER SECTION: Full Body Frontal View. Standing confident pose. Show the full outfit clearly from head to toe.
+      3. RIGHT SECTION: Full Body Back View. Standing pose showing the back of the outfit/hair.
+      
+      CRITICAL CONSTRAINT: The character MUST be identical in all three shots (same face, same hair, same outfit, same body type).
+      Background: Consistent studio background across all three sections.
+     `;
+  }
+
   if (settings.gridCount === 1) {
     const effectiveAngle = settings.customCameraAngles[0]?.trim() || settings.cameraAngles[0];
     const effectivePose = settings.customPoses[0]?.trim() || settings.poses[0];
@@ -437,6 +453,7 @@ export const generateConsistentImage = async (
 export const generateFromReferences = async (
   modelRefs: ReferenceImage[],
   clothingRefs: ReferenceImage[],
+  locationRefs: ReferenceImage[] = [], // Added location refs
   settings: GenerationSettings
 ): Promise<string> => {
   const ai = getClient();
@@ -466,10 +483,40 @@ export const generateFromReferences = async (
     });
   }
 
+  // 3. Add Location Images
+  const selectedLocationRefs = locationRefs.filter(r => r.selected);
+  for (const ref of selectedLocationRefs) {
+    const { mimeType, data } = parseDataUrl(ref.url);
+    parts.push({
+      inlineData: { mimeType, data }
+    });
+  }
+
   const effectiveConcept = settings.customLocation && settings.customLocation.trim().length > 0 
     ? settings.customLocation 
     : settings.concept;
 
+  // -- Location Instruction --
+  let locationInstruction = "";
+  let locationInputDesc = "";
+
+  if (selectedLocationRefs.length > 0) {
+    locationInputDesc = `- The NEXT ${selectedLocationRefs.length} images are 'BACKGROUND REFERENCE' (Location/Scene).`;
+    locationInstruction = `
+    3. BACKGROUND/LOCATION REFERENCE:
+       - Use the provided 'BACKGROUND REFERENCE' images as the setting.
+       - Replicate the architectural style, lighting atmosphere, and environment details from these images.
+       - Integrate the model naturally into this specific background.
+    `;
+  } else {
+    locationInputDesc = `- No specific background reference images provided.`;
+    locationInstruction = `
+    3. BACKGROUND/LOCATION:
+       - Generate the background based on the text concept: "${effectiveConcept}".
+    `;
+  }
+
+  // -- Clothing Instruction --
   let clothingInstruction = "";
   let clothingInputDesc = "";
 
@@ -493,7 +540,7 @@ export const generateFromReferences = async (
      `;
   }
 
-  // Handle case where NO model reference images are provided (Generation Mode with Clothes)
+  // -- Model Instruction --
   let characterInstruction = "";
   let modelInputDesc = "";
   
@@ -521,20 +568,23 @@ export const generateFromReferences = async (
   const promptText = `
     ${styleContext}
 
-    TASK: Fashion Editorial with Consistent Character.
+    TASK: Fashion Editorial with Consistent Character and Environment.
 
     INPUT REFERENCES:
     ${modelInputDesc}
     ${clothingInputDesc}
+    ${locationInputDesc}
 
     INSTRUCTIONS:
     Generate a high-end commercial fashion photo.
     ${characterInstruction}
     ${clothingInstruction}
-    3. COMPOSITION: Seamlessly integrate the character and outfit.
+    ${locationInstruction}
+    
+    4. COMPOSITION: Seamlessly integrate the character, outfit, and background.
 
     SCENE & COMPOSITION:
-    Concept/Location: ${effectiveConcept}
+    Concept/Location (Text Hint): ${effectiveConcept}
     ${gridPrompt}
     
     ${priorityInstructions}
@@ -648,6 +698,85 @@ export const editOutfit = async (imageBase64: string, editPrompt: string): Promi
     return await handleResponse(response);
   } catch (error: any) {
     console.error("Outfit edit error:", error);
+    throw error;
+  }
+};
+
+export const extractBackground = async (imageBase64: string): Promise<string> => {
+  const ai = getClient();
+  const { mimeType, data } = parseDataUrl(imageBase64);
+
+  const prompt = `
+    TASK: Remove the person/model from this image and generate a clean, empty background.
+    
+    INSTRUCTIONS:
+    - Identify the background environment (architecture, landscape, furniture, lighting).
+    - Remove ALL human subjects from the scene.
+    - Fill in the empty space (Inpainting) where the person was, using context from the surroundings.
+    - The result should look like a natural, empty room or location shot.
+    - Preserve the original lighting, depth of field, and atmosphere.
+    - Do NOT crop the image. Maintain the original composition.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: {
+        parts: [
+          { inlineData: { mimeType, data } },
+          { text: prompt }
+        ],
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: "16:9", // Attempt to keep wide, though model might adjust
+          imageSize: "2K",
+        },
+        safetySettings: SAFETY_SETTINGS,
+      },
+    });
+
+    return await handleResponse(response);
+  } catch (error: any) {
+    console.error("Background extraction error:", error);
+    throw error;
+  }
+};
+
+export const editBackground = async (imageBase64: string, editPrompt: string): Promise<string> => {
+  const ai = getClient();
+  const { mimeType, data } = parseDataUrl(imageBase64);
+
+  const prompt = `
+    TASK: Edit this background image according to the user's request.
+    USER REQUEST: "${editPrompt}"
+    
+    CONSTRAINTS:
+    - Keep the image as a background scene (no people).
+    - Maintain high-quality architectural/landscape details.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: {
+        parts: [
+          { inlineData: { mimeType, data } },
+          { text: prompt }
+        ],
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: "16:9",
+          imageSize: "2K",
+        },
+        safetySettings: SAFETY_SETTINGS,
+      },
+    });
+
+    return await handleResponse(response);
+  } catch (error: any) {
+    console.error("Background edit error:", error);
     throw error;
   }
 };

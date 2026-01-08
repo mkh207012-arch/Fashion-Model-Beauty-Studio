@@ -1,9 +1,9 @@
 import React from 'react';
-import { GenerationSettings, ReferenceImage, StudioMode, GridCount } from '../types';
+import { GenerationSettings, ReferenceImage, StudioMode, GridCount, AspectRatio } from '../types';
 import { ASPECT_RATIOS, CONCEPT_GROUPS, RESOLUTIONS, GRID_OPTIONS, GRID_SIZING_OPTIONS, FASHION_POSES, CAMERA_ANGLES, MODEL_ATTRIBUTES, ANIMAL_FACE_SHAPES } from '../constants';
 import { LensSelector } from './LensSelector';
 import { Button } from './Button';
-import { Sparkles, Ratio, Zap, Monitor, MapPin, Camera, User, Shirt, Plus, X, LayoutTemplate, Grid, Layers, ScanEye, MessageSquarePlus, Scissors, Settings, RotateCcw, Palette } from 'lucide-react';
+import { Sparkles, Ratio, Zap, Monitor, MapPin, Camera, User, Shirt, Plus, X, LayoutTemplate, Grid, Layers, ScanEye, MessageSquarePlus, Scissors, Settings, RotateCcw, Palette, Users, Image as ImageIcon } from 'lucide-react';
 
 interface ControlPanelProps {
   settings: GenerationSettings;
@@ -16,12 +16,16 @@ interface ControlPanelProps {
   // Reference Props
   modelRefs: ReferenceImage[];
   clothingRefs: ReferenceImage[];
+  locationRefs?: ReferenceImage[]; // Made optional to support backward compatibility in type if needed, but App provides it
   onUploadModel: (files: FileList | null) => void;
   onUploadClothing: (files: FileList | null) => void;
+  onUploadLocation?: (files: FileList | null) => void;
   onToggleModel: (id: string) => void;
   onToggleClothing: (id: string) => void;
+  onToggleLocation?: (id: string) => void;
   onRemoveModel: (id: string) => void;
   onRemoveClothing: (id: string) => void;
+  onRemoveLocation?: (id: string) => void;
   
   // Extraction Props
   onExtractOutfit?: () => void;
@@ -39,12 +43,16 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   isGenerating,
   modelRefs,
   clothingRefs,
+  locationRefs = [],
   onUploadModel,
   onUploadClothing,
+  onUploadLocation,
   onToggleModel,
   onToggleClothing,
+  onToggleLocation,
   onRemoveModel,
   onRemoveClothing,
+  onRemoveLocation,
   onExtractOutfit,
   onOpenConfig
 }) => {
@@ -73,7 +81,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   const handleConceptChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onUpdate({ 
       ...settings, 
-      concept: e.target.value,
+      concept: e.target.value, 
       customLocation: "" 
     });
   };
@@ -98,12 +106,22 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     
     onUpdate({
       ...settings,
+      layoutMode: 'grid', // Ensure we are in grid mode
       gridCount: count,
       poses: newPoses,
       customPoses: newCustomPoses,
       cameraAngles: newAngles,
       customCameraAngles: newCustomAngles
     });
+  };
+  
+  const handleProfileModeSelect = () => {
+      onUpdate({
+          ...settings,
+          layoutMode: 'profile_spread',
+          aspectRatio: AspectRatio.Wide, // Force 16:9
+          resolution: "2K", // Force 2K
+      });
   };
 
   const handleResetPosesAngles = () => {
@@ -176,7 +194,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         id={id}
         multiple
         accept="image/*"
-        onChange={(e) => onChange(e.target.files)}
+        onChange={(e) => onChange && onChange(e.target.files)}
         className="hidden"
       />
       <label
@@ -204,7 +222,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             <div 
               key={img.id} 
               className={`relative aspect-square group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${img.selected ? 'border-rose-500 ring-1 ring-rose-500' : 'border-gray-700 opacity-60 hover:opacity-100'}`}
-              onClick={() => onToggle(img.id)}
+              onClick={() => onToggle && onToggle(img.id)}
             >
               <img src={img.url} className="w-full h-full object-cover" alt="ref" />
               {img.selected && (
@@ -213,7 +231,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  onRemove(img.id);
+                  onRemove && onRemove(img.id);
                 }}
                 className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5 hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
               >
@@ -228,13 +246,76 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
   const selectedModelCount = modelRefs.filter(r => r.selected).length;
   const selectedClothingCount = clothingRefs.filter(r => r.selected).length;
+  const selectedLocationCount = locationRefs.filter(r => r.selected).length;
   const hasClothingText = settings.clothingPrompt && settings.clothingPrompt.trim().length > 0;
   
   const canGenerateReference = mode === 'reference' 
-    ? (selectedModelCount > 0 || (selectedClothingCount > 0 || hasClothingText)) 
+    ? (selectedModelCount > 0 || (selectedClothingCount > 0 || hasClothingText || selectedLocationCount > 0)) 
     : true;
 
   const canExtract = selectedModelCount === 1;
+
+  const isProfileMode = settings.layoutMode === 'profile_spread';
+
+  // --- REUSABLE SECTIONS ---
+
+  const AspectRatioSection = (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-gray-300 font-semibold">
+        <Ratio size={18} />
+        <h3>화면 비율</h3>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {ASPECT_RATIOS.map((ratio) => (
+          <button
+            key={ratio.value}
+            disabled={isProfileMode}
+            onClick={() => onUpdate({ ...settings, aspectRatio: ratio.value })}
+            className={`text-xs py-2 px-3 rounded-lg border transition-colors
+              ${settings.aspectRatio === ratio.value 
+                ? 'bg-rose-500 text-white border-rose-600' 
+                : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}
+              ${isProfileMode ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+          >
+            {ratio.label}
+          </button>
+        ))}
+      </div>
+      {isProfileMode && (
+         <p className="text-[10px] text-gray-500 px-1">* 프로필 사진 모드에서는 16:9 비율로 고정됩니다.</p>
+      )}
+    </div>
+  );
+
+  const ResolutionSection = (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-gray-300 font-semibold">
+        <Monitor size={18} />
+        <h3>해상도</h3>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {RESOLUTIONS.map((res) => (
+          <button
+            key={res.value}
+            disabled={isProfileMode}
+            onClick={() => onUpdate({ ...settings, resolution: res.value })}
+            className={`text-xs py-2 px-3 rounded-lg border transition-colors
+              ${settings.resolution === res.value 
+                ? 'bg-rose-500 text-white border-rose-600' 
+                : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}
+              ${isProfileMode ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+          >
+            {res.label}
+          </button>
+        ))}
+      </div>
+      {isProfileMode && (
+         <p className="text-[10px] text-gray-500 px-1">* 프로필 사진 모드에서는 2K 화질로 고정됩니다.</p>
+      )}
+    </div>
+  );
 
   return (
     <div className="bg-gray-900 border-r border-gray-800 h-full flex flex-col w-full md:w-[400px] overflow-y-auto">
@@ -270,7 +351,12 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             기본 스튜디오
           </button>
           <button
-            onClick={() => onModeChange('reference')}
+            onClick={() => {
+              onModeChange('reference');
+              if (settings.layoutMode === 'profile_spread') {
+                handleGridChange(1);
+              }
+            }}
             className={`flex-1 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-all
               ${mode === 'reference' ? 'bg-rose-900/40 text-rose-200 shadow-md border border-rose-900/50' : 'text-gray-500 hover:text-gray-300'}`}
           >
@@ -281,6 +367,15 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
       </div>
 
       <div className="px-6 pb-6 space-y-8 flex-1 overflow-y-auto">
+
+        {/* --- GLOBAL SETTINGS (Moved Top for Reference Mode) --- */}
+        {mode === 'reference' && (
+          <div className="animate-in fade-in slide-in-from-top-1 duration-300 space-y-8">
+            {AspectRatioSection}
+            {ResolutionSection}
+            <hr className="border-gray-800" />
+          </div>
+        )}
         
         {/* --- STANDARD MODE CONTENT --- */}
         {mode === 'standard' && (
@@ -292,6 +387,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         {/* --- REFERENCE MODE CONTENT --- */}
         {mode === 'reference' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+            {/* 1. Model Reference */}
             <div className="bg-gray-800/30 p-4 rounded-xl border border-gray-800 space-y-4">
               <div className="flex items-center gap-2 text-rose-400 font-semibold mb-1">
                 <User size={18} />
@@ -321,6 +417,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               )}
             </div>
 
+            {/* 2. Clothing Reference */}
             <div className="bg-gray-800/30 p-4 rounded-xl border border-gray-800 space-y-4">
               <div className="flex items-center gap-2 text-purple-400 font-semibold mb-1">
                 <Shirt size={18} />
@@ -343,57 +440,42 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                  />
               </div>
             </div>
+
+            {/* 3. Location/Background Reference */}
+            <div className="bg-gray-800/30 p-4 rounded-xl border border-gray-800 space-y-4">
+              <div className="flex items-center gap-2 text-emerald-400 font-semibold mb-1">
+                <ImageIcon size={18} />
+                <h3>장소/배경 레퍼런스</h3>
+              </div>
+              <FileInput id="upload-location" onChange={onUploadLocation} label="배경 사진 추가 (최대 10장)" icon={Plus} />
+              <ReferenceGrid 
+                title="선택된 배경 이미지" 
+                items={locationRefs} 
+                onToggle={onToggleLocation} 
+                onRemove={onRemoveLocation} 
+              />
+              <div className="pt-2 px-1">
+                  <p className="text-[10px] text-gray-500 mb-1">
+                    * 배경 이미지가 선택되면 아래의 '장소/배경' 텍스트 설정보다 이미지가 우선 적용됩니다.
+                  </p>
+              </div>
+            </div>
           </div>
         )}
 
         {/* --- SHARED CONTROLS --- */}
         <hr className="border-gray-800" />
 
-        {/* Aspect Ratio */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-gray-300 font-semibold">
-            <Ratio size={18} />
-            <h3>화면 비율</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {ASPECT_RATIOS.map((ratio) => (
-              <button
-                key={ratio.value}
-                onClick={() => onUpdate({ ...settings, aspectRatio: ratio.value })}
-                className={`text-xs py-2 px-3 rounded-lg border transition-colors
-                  ${settings.aspectRatio === ratio.value 
-                    ? 'bg-rose-500 text-white border-rose-600' 
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
-              >
-                {ratio.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Resolution */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-gray-300 font-semibold">
-            <Monitor size={18} />
-            <h3>해상도</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {RESOLUTIONS.map((res) => (
-              <button
-                key={res.value}
-                onClick={() => onUpdate({ ...settings, resolution: res.value })}
-                className={`text-xs py-2 px-3 rounded-lg border transition-colors
-                  ${settings.resolution === res.value 
-                    ? 'bg-rose-500 text-white border-rose-600' 
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
-              >
-                {res.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Aspect Ratio & Resolution (Standard Mode placement) */}
+        {mode === 'standard' && (
+           <>
+             {AspectRatioSection}
+             {ResolutionSection}
+           </>
+        )}
 
         {/* --- NEW MODEL SETTINGS --- */}
+        {mode === 'standard' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-gray-300 font-semibold">
@@ -562,6 +644,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
           </div>
         </div>
+        )}
 
         {/* Concepts & Location */}
         <div className="space-y-3">
@@ -605,139 +688,171 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-gray-300 font-semibold">
             <Grid size={18} />
-            <h3>출력 형태 (분할 컷)</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {GRID_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => handleGridChange(opt.value)}
-                className={`text-xs py-2 px-1 rounded-lg border transition-colors
-                  ${settings.gridCount === opt.value 
-                    ? 'bg-rose-500 text-white border-rose-600' 
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
-              >
-                {opt.label}
-              </button>
-            ))}
+            <h3>출력 형태</h3>
           </div>
           
-          {/* Sizing Option (Only if grid > 1) */}
-          {settings.gridCount > 1 && (
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {GRID_SIZING_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => onUpdate({ ...settings, gridSizing: opt.value })}
-                  className={`text-xs py-2 px-2 rounded-lg border transition-colors flex items-center justify-center gap-2
-                    ${settings.gridSizing === opt.value 
-                      ? 'bg-purple-600 text-white border-purple-500' 
-                      : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
-                >
-                  <Layers size={12} />
-                  {opt.label}
-                </button>
-              ))}
+          {/* Main Layout Buttons */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
+             <button
+               onClick={handleProfileModeSelect}
+               className={`py-3 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 border transition-all
+                 ${isProfileMode 
+                   ? 'bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-900/30' 
+                   : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-750'}`}
+             >
+               <Users size={16} />
+               프로필 사진
+             </button>
+             <button
+               onClick={() => handleGridChange(1)}
+               className={`py-3 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 border transition-all
+                 ${!isProfileMode 
+                   ? 'bg-purple-600 text-white border-purple-500 shadow-lg shadow-purple-900/30' 
+                   : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
+             >
+               <Grid size={16} />
+               분할 컷 / 단독 컷
+             </button>
+          </div>
+
+          {!isProfileMode && (
+            <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="grid grid-cols-3 gap-2">
+                {GRID_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleGridChange(opt.value)}
+                    className={`text-xs py-2 px-1 rounded-lg border transition-colors
+                      ${settings.gridCount === opt.value 
+                        ? 'bg-purple-500 text-white border-purple-600' 
+                        : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Sizing Option (Only if grid > 1) */}
+              {settings.gridCount > 1 && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {GRID_SIZING_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => onUpdate({ ...settings, gridSizing: opt.value })}
+                      className={`text-xs py-2 px-2 rounded-lg border transition-colors flex items-center justify-center gap-2
+                        ${settings.gridSizing === opt.value 
+                          ? 'bg-indigo-600 text-white border-indigo-500' 
+                          : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'}`}
+                    >
+                      <Layers size={12} />
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Dynamic Pose & Angle Selection Per Cut */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gray-300 font-semibold">
-              <Zap size={18} />
-              <h3>포즈 및 앵글 설정 ({settings.gridCount}컷)</h3>
+        {!isProfileMode && (
+          <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-300 font-semibold">
+                <Zap size={18} />
+                <h3>포즈 및 앵글 설정 ({settings.gridCount}컷)</h3>
+              </div>
+              <button 
+                onClick={handleResetPosesAngles}
+                className="text-xs flex items-center gap-1 text-gray-500 hover:text-white transition-colors px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
+                title="모든 포즈/앵글 설정 초기화"
+              >
+                <RotateCcw size={12} />
+                초기화
+              </button>
             </div>
-            <button 
-              onClick={handleResetPosesAngles}
-              className="text-xs flex items-center gap-1 text-gray-500 hover:text-white transition-colors px-2 py-1 rounded bg-gray-800 hover:bg-gray-700"
-              title="모든 포즈/앵글 설정 초기화"
-            >
-              <RotateCcw size={12} />
-              초기화
-            </button>
+
+            <div className="space-y-4">
+              {Array.from({ length: settings.gridCount }).map((_, idx) => (
+                  <div key={idx} className="bg-gray-800/40 p-3 rounded-lg border border-gray-800">
+                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-700/50">
+                      <span className="text-xs font-bold text-rose-300 px-2 py-0.5 rounded bg-rose-900/30 border border-rose-800">
+                          {settings.gridCount > 1 ? `CUT #${idx + 1}` : 'MAIN CUT'}
+                      </span>
+                    </div>
+
+                    {/* Angle Row */}
+                    <div className="space-y-1 mb-3">
+                      <label className="text-[10px] text-gray-500 ml-1 flex items-center gap-1 font-medium">
+                        <ScanEye size={10} />
+                        카메라 앵글 (구도)
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select 
+                          value={settings.cameraAngles[idx] || CAMERA_ANGLES[0]}
+                          onChange={(e) => handleAngleChange(idx, e.target.value)}
+                          className={`w-full bg-gray-900 border border-gray-700 text-gray-200 text-xs rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-2 ${settings.customCameraAngles[idx] ? 'opacity-40' : ''}`}
+                        >
+                            {CAMERA_ANGLES.map(angle => (
+                              <option key={angle} value={angle}>{angle}</option>
+                            ))}
+                        </select>
+                        <input
+                          type="text"
+                          value={settings.customCameraAngles[idx] || ""}
+                          onChange={(e) => handleCustomAngleChange(idx, e.target.value)}
+                          placeholder="직접 입력"
+                          className="w-full bg-black/40 border border-gray-700 text-white text-xs rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-2 placeholder-gray-600"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pose Row */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-500 ml-1 flex items-center gap-1 font-medium">
+                        <User size={10} />
+                        포즈 / 동작
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select 
+                          value={settings.poses[idx] || FASHION_POSES[0]}
+                          onChange={(e) => handlePoseChange(idx, e.target.value)}
+                          className={`w-full bg-gray-900 border border-gray-700 text-gray-200 text-xs rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-2 ${settings.customPoses[idx] ? 'opacity-40' : ''}`}
+                        >
+                            {FASHION_POSES.map(pose => (
+                              <option key={pose} value={pose}>{pose}</option>
+                            ))}
+                        </select>
+                        <input
+                          type="text"
+                          value={settings.customPoses[idx] || ""}
+                          onChange={(e) => handleCustomPoseChange(idx, e.target.value)}
+                          placeholder="직접 입력"
+                          className="w-full bg-black/40 border border-gray-700 text-white text-xs rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-2 placeholder-gray-600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+              ))}
+            </div>
           </div>
-
-          <div className="space-y-4">
-             {Array.from({ length: settings.gridCount }).map((_, idx) => (
-                <div key={idx} className="bg-gray-800/40 p-3 rounded-lg border border-gray-800">
-                   <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-700/50">
-                     <span className="text-xs font-bold text-rose-300 px-2 py-0.5 rounded bg-rose-900/30 border border-rose-800">
-                        {settings.gridCount > 1 ? `CUT #${idx + 1}` : 'MAIN CUT'}
-                     </span>
-                   </div>
-
-                   {/* Angle Row */}
-                   <div className="space-y-1 mb-3">
-                     <label className="text-[10px] text-gray-500 ml-1 flex items-center gap-1 font-medium">
-                       <ScanEye size={10} />
-                       카메라 앵글 (구도)
-                     </label>
-                     <div className="grid grid-cols-2 gap-2">
-                       <select 
-                         value={settings.cameraAngles[idx] || CAMERA_ANGLES[0]}
-                         onChange={(e) => handleAngleChange(idx, e.target.value)}
-                         className={`w-full bg-gray-900 border border-gray-700 text-gray-200 text-xs rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-2 ${settings.customCameraAngles[idx] ? 'opacity-40' : ''}`}
-                       >
-                          {CAMERA_ANGLES.map(angle => (
-                            <option key={angle} value={angle}>{angle}</option>
-                          ))}
-                       </select>
-                       <input
-                         type="text"
-                         value={settings.customCameraAngles[idx] || ""}
-                         onChange={(e) => handleCustomAngleChange(idx, e.target.value)}
-                         placeholder="직접 입력"
-                         className="w-full bg-black/40 border border-gray-700 text-white text-xs rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-2 placeholder-gray-600"
-                       />
-                     </div>
-                   </div>
-
-                   {/* Pose Row */}
-                   <div className="space-y-1">
-                     <label className="text-[10px] text-gray-500 ml-1 flex items-center gap-1 font-medium">
-                       <User size={10} />
-                       포즈 / 동작
-                     </label>
-                     <div className="grid grid-cols-2 gap-2">
-                       <select 
-                         value={settings.poses[idx] || FASHION_POSES[0]}
-                         onChange={(e) => handlePoseChange(idx, e.target.value)}
-                         className={`w-full bg-gray-900 border border-gray-700 text-gray-200 text-xs rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-2 ${settings.customPoses[idx] ? 'opacity-40' : ''}`}
-                       >
-                          {FASHION_POSES.map(pose => (
-                            <option key={pose} value={pose}>{pose}</option>
-                          ))}
-                       </select>
-                       <input
-                        type="text"
-                        value={settings.customPoses[idx] || ""}
-                        onChange={(e) => handleCustomPoseChange(idx, e.target.value)}
-                        placeholder="직접 입력"
-                        className="w-full bg-black/40 border border-gray-700 text-white text-xs rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-2 placeholder-gray-600"
-                      />
-                     </div>
-                   </div>
-                </div>
-             ))}
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-gray-800">
-             <label className="text-xs text-rose-400 font-bold ml-1 mb-2 flex items-center gap-1">
-               <MessageSquarePlus size={14} />
-               추가 요청 사항 (최우선 반영)
-             </label>
-             <p className="text-[10px] text-gray-500 mb-2 px-1">
-               * 이곳에 적힌 내용은 위의 포즈/앵글 설정보다 우선 적용됩니다. 전체적인 분위기나 충돌하는 설정을 덮어쓸 때 사용하세요.
-             </p>
-             <textarea
-              value={settings.additionalPrompt}
-              onChange={(e) => onUpdate({...settings, additionalPrompt: e.target.value})}
-              placeholder="예: 모든 컷에서 모델이 눈물을 흘리고 있어야 함. 흑백 사진 분위기. (위의 앵글/포즈 설정 무시하고 이것을 따름)"
-              className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-3 min-h-[80px]"
-            />
-          </div>
+        )}
+        
+        {/* Additional Prompt (Always visible) */}
+        <div className="mt-4 pt-4 border-t border-gray-800">
+           <label className="text-xs text-rose-400 font-bold ml-1 mb-2 flex items-center gap-1">
+             <MessageSquarePlus size={14} />
+             추가 요청 사항 (최우선 반영)
+           </label>
+           <p className="text-[10px] text-gray-500 mb-2 px-1">
+             * {isProfileMode ? '프로필 사진 구도 내에서 세부 디테일을 조정할 때 사용하세요.' : '이곳에 적힌 내용은 위의 포즈/앵글 설정보다 우선 적용됩니다.'}
+           </p>
+           <textarea
+            value={settings.additionalPrompt}
+            onChange={(e) => onUpdate({...settings, additionalPrompt: e.target.value})}
+            placeholder="예: 모든 컷에서 모델이 눈물을 흘리고 있어야 함. 흑백 사진 분위기. (위의 앵글/포즈 설정 무시하고 이것을 따름)"
+            className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-3 min-h-[80px]"
+          />
         </div>
 
       </div>
