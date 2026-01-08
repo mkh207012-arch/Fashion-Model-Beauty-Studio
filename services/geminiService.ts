@@ -151,7 +151,7 @@ function getBodySynergyPrompt(height: string, bodyType: string, proportion: stri
      description += " Features: Curvy plus-size, soft silhouette, realistic body standards, voluminous beauty.";
   }
   if (bodyType.includes("글래머러스")) {
-     description += " Features: Extremely voluptuous and curvy hourglass figure. Prominent large bust, very narrow waist, and wide hips. Emphasize deep curves and body volume. Sexy and bold silhouette.";
+     description += " Features: Voluptuous and glamorous physique. Prominent large bust and full hips. Natural waist width (avoiding unrealistically thin waist), realistic body volume. Healthy and soft silhouette.";
   }
   if (isPear) {
      description += " Features: Pear-shaped, wide hips, thicker thighs, narrow shoulders, feminine lower body curve.";
