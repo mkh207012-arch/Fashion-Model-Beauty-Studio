@@ -161,6 +161,19 @@ function getBodySynergyPrompt(height: string, bodyType: string, proportion: stri
   return description;
 }
 
+/**
+ * Returns prompt keywords based on facial expression slider (0-100)
+ */
+function getExpressionPrompt(value: number): string {
+  if (value <= 33) {
+    return "Expression: neutral expression, parted lips, high-fashion gaze, bored look, chic and indifferent.";
+  } else if (value <= 66) {
+    return "Expression: gentle smile, approachable, warm eyes, natural soft look, friendly atmosphere.";
+  } else {
+    return "Expression: bright laugh, joyful, vibrant energy, showing teeth, happy, wide smile.";
+  }
+}
+
 function getBaseStylePrompt(lens: LensConfig, settings?: GenerationSettings): string {
   let subjectDescription = "Professional female fashion model.";
   let faceDetails = "Charming and attractive face, perfect makeup styling.";
@@ -170,6 +183,9 @@ function getBaseStylePrompt(lens: LensConfig, settings?: GenerationSettings): st
     const facePrompt = getFaceShapePrompt(faceShape);
     const bodyPrompt = getBodySynergyPrompt(height, bodyType, proportion, shoulderWidth);
     
+    // Get Expression Prompt
+    const expressionPrompt = getExpressionPrompt(settings.facialExpression ?? 50);
+
     subjectDescription = `
       Professional Fashion Model.
       Demographics: ${nationality}, ${gender}, ${age}.
@@ -180,6 +196,7 @@ function getBaseStylePrompt(lens: LensConfig, settings?: GenerationSettings): st
     faceDetails = `
       Detailed Facial Features:
       ${facePrompt}
+      ${expressionPrompt}
       High quality, detailed skin texture, expressive eyes.
     `;
   }
@@ -555,6 +572,9 @@ export const generateFromReferences = async (
     const facePrompt = getFaceShapePrompt(faceShape);
     // Use the synergy logic here too for consistent descriptions in reference mode
     const bodyPrompt = getBodySynergyPrompt(height, bodyType, proportion, shoulderWidth);
+    
+    // Get Expression Prompt for reference mode too
+    const expressionPrompt = getExpressionPrompt(settings.facialExpression ?? 50);
 
     characterInstruction = `
     1. CHARACTER GENERATION:
@@ -563,6 +583,7 @@ export const generateFromReferences = async (
        - ${bodyPrompt}
        - Styling: ${makeup}.
        - Face: ${facePrompt}
+       - ${expressionPrompt}
     `;
   }
 

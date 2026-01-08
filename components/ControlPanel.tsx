@@ -3,7 +3,7 @@ import { GenerationSettings, ReferenceImage, StudioMode, GridCount, AspectRatio 
 import { ASPECT_RATIOS, CONCEPT_GROUPS, RESOLUTIONS, GRID_OPTIONS, GRID_SIZING_OPTIONS, FASHION_POSES, CAMERA_ANGLES, MODEL_ATTRIBUTES, ANIMAL_FACE_SHAPES } from '../constants';
 import { LensSelector } from './LensSelector';
 import { Button } from './Button';
-import { Sparkles, Ratio, Zap, Monitor, MapPin, Camera, User, Shirt, Plus, X, LayoutTemplate, Grid, Layers, ScanEye, MessageSquarePlus, Scissors, Settings, RotateCcw, Palette, Users, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Ratio, Zap, Monitor, MapPin, Camera, User, Shirt, Plus, X, LayoutTemplate, Grid, Layers, ScanEye, MessageSquarePlus, Scissors, Settings, RotateCcw, Palette, Users, Image as ImageIcon, Smile } from 'lucide-react';
 
 interface ControlPanelProps {
   settings: GenerationSettings;
@@ -145,10 +145,10 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         age: MODEL_ATTRIBUTES.age[3], // 20대 초반 (Early 20s)
         height: MODEL_ATTRIBUTES.height[2], // 165cm 평균
         bodyType: MODEL_ATTRIBUTES.bodyType[0], // 슬림형
-        proportion: MODEL_ATTRIBUTES.proportion[0], // 선택 안 함
+        proportion: MODEL_ATTRIBUTES.proportion[3], // 황금 비율 (Default)
         shoulderWidth: MODEL_ATTRIBUTES.shoulderWidth[0], // 선택 안 함
         faceShape: ANIMAL_FACE_SHAPES[0].items[0].id, // puppy
-        makeup: MODEL_ATTRIBUTES.makeup[0].value // K-Pop 아이돌
+        makeup: MODEL_ATTRIBUTES.makeup[3].value // 과즙 메이크업 (Default)
       }
     });
   };
@@ -185,6 +185,13 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         [key]: value
       }
     });
+  };
+  
+  // Expression Slider Helper
+  const getExpressionLabel = (val: number) => {
+    if (val <= 33) return "시크/무심 (Chic)";
+    if (val <= 66) return "내추럴 미소 (Smile)";
+    return "활기찬 웃음 (Joyful)";
   };
 
   const FileInput = ({ id, onChange, label, icon: Icon }: any) => (
@@ -681,6 +688,36 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 placeholder="장소 직접 입력 (예: 런웨이, 침실)"
                 className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block p-3 placeholder-gray-500"
              />
+          </div>
+        </div>
+        
+        {/* NEW: Facial Expression Slider */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-300 font-semibold">
+              <Smile size={18} />
+              <h3>모델 표정 설정</h3>
+            </div>
+            <span className="text-xs text-rose-400 font-bold">
+              {getExpressionLabel(settings.facialExpression)} ({settings.facialExpression})
+            </span>
+          </div>
+          
+          <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-800">
+             <input 
+               type="range" 
+               min="0" 
+               max="100" 
+               step="10"
+               value={settings.facialExpression}
+               onChange={(e) => onUpdate({...settings, facialExpression: parseInt(e.target.value)})}
+               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+             />
+             <div className="flex justify-between mt-2 text-[10px] text-gray-500">
+               <span>시크/무심(0)</span>
+               <span>내추럴 미소(50)</span>
+               <span>활기찬 웃음(100)</span>
+             </div>
           </div>
         </div>
 

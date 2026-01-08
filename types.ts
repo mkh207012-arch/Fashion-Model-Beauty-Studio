@@ -40,6 +40,9 @@ export interface GenerationSettings {
   // Model Character Settings
   model: ModelSettings;
 
+  // New: Facial Expression Slider (0-100)
+  facialExpression: number;
+
   // Layout settings
   layoutMode: LayoutMode; // 'grid' or 'profile_spread'
   gridCount: GridCount;

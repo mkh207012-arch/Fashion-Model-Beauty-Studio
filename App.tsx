@@ -22,11 +22,14 @@ const App: React.FC = () => {
       age: MODEL_ATTRIBUTES.age[3], // Default to Early 20s
       height: MODEL_ATTRIBUTES.height[2], // Default to 165cm
       bodyType: MODEL_ATTRIBUTES.bodyType[0], // Default to Slender
-      proportion: MODEL_ATTRIBUTES.proportion[0], // Default: Select None
+      proportion: MODEL_ATTRIBUTES.proportion[3], // Default: Golden Ratio (황금 비율)
       shoulderWidth: MODEL_ATTRIBUTES.shoulderWidth[0], // Default: Select None
       faceShape: ANIMAL_FACE_SHAPES[0].items[0].id, // Default to Puppy
-      makeup: MODEL_ATTRIBUTES.makeup[0].value
+      makeup: MODEL_ATTRIBUTES.makeup[3].value // Default: Fruity/Juicy (과즙 메이크업)
     },
+
+    // Facial Expression (0-100)
+    facialExpression: 50, // Default: Gentle Smile
 
     // Layout Settings
     layoutMode: 'profile_spread', // Default Mode
