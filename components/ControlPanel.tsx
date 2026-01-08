@@ -1,9 +1,9 @@
 import React from 'react';
 import { GenerationSettings, ReferenceImage, StudioMode, GridCount, AspectRatio } from '../types';
-import { ASPECT_RATIOS, CONCEPT_GROUPS, RESOLUTIONS, GRID_OPTIONS, GRID_SIZING_OPTIONS, FASHION_POSES, CAMERA_ANGLES, MODEL_ATTRIBUTES, ANIMAL_FACE_SHAPES } from '../constants';
+import { ASPECT_RATIOS, CONCEPT_GROUPS, RESOLUTIONS, GRID_OPTIONS, GRID_SIZING_OPTIONS, FASHION_POSES, CAMERA_ANGLES, MODEL_ATTRIBUTES, ANIMAL_FACE_SHAPES, FACIAL_MOODS } from '../constants';
 import { LensSelector } from './LensSelector';
 import { Button } from './Button';
-import { Sparkles, Ratio, Zap, Monitor, MapPin, Camera, User, Shirt, Plus, X, LayoutTemplate, Grid, Layers, ScanEye, MessageSquarePlus, Scissors, Settings, RotateCcw, Palette, Users, Image as ImageIcon, Smile } from 'lucide-react';
+import { Sparkles, Ratio, Zap, Monitor, MapPin, Camera, User, Shirt, Plus, X, LayoutTemplate, Grid, Layers, ScanEye, MessageSquarePlus, Scissors, Settings, RotateCcw, Users, Image as ImageIcon, Heart } from 'lucide-react';
 
 interface ControlPanelProps {
   settings: GenerationSettings;
@@ -62,9 +62,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   const currentFaceGroup = ANIMAL_FACE_SHAPES.find(g => g.items.some(i => i.id === currentFaceShapeId)) || ANIMAL_FACE_SHAPES[0];
   // Cast to any to access the new descriptionKo property if types aren't fully updated yet, or rely on JS flexibility
   const currentFaceItem = (currentFaceGroup.items.find(i => i.id === currentFaceShapeId) || currentFaceGroup.items[0]) as any;
-
-  // Helper for Makeup Logic
-  const currentMakeup = MODEL_ATTRIBUTES.makeup.find(m => m.value === settings.model.makeup) || MODEL_ATTRIBUTES.makeup[0];
 
   const handleFaceCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCategory = e.target.value;
@@ -148,7 +145,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         proportion: MODEL_ATTRIBUTES.proportion[3], // 황금 비율 (Default)
         shoulderWidth: MODEL_ATTRIBUTES.shoulderWidth[0], // 선택 안 함
         faceShape: ANIMAL_FACE_SHAPES[0].items[0].id, // puppy
-        makeup: MODEL_ATTRIBUTES.makeup[3].value // 과즙 메이크업 (Default)
+        facialMood: FACIAL_MOODS[0].value, // 선택 안 함
       }
     });
   };
@@ -185,13 +182,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         [key]: value
       }
     });
-  };
-  
-  // Expression Slider Helper
-  const getExpressionLabel = (val: number) => {
-    if (val <= 33) return "시크/무심 (Chic)";
-    if (val <= 66) return "내추럴 미소 (Smile)";
-    return "활기찬 웃음 (Joyful)";
   };
 
   const FileInput = ({ id, onChange, label, icon: Icon }: any) => (
@@ -627,28 +617,21 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               </div>
             </div>
 
-            {/* Row 6: Makeup */}
-             <div className="pt-2">
+            {/* Row 6: Facial Mood Selection */}
+            <div className="pt-2">
               <label className="text-[10px] text-gray-500 mb-1 block flex items-center gap-1">
-                 <Palette size={10} /> 메이크업 / 스타일링
+                 <Heart size={10} /> 얼굴 무드 (Vibe)
               </label>
               <select 
-                value={settings.model.makeup} 
-                onChange={(e) => handleModelUpdate('makeup', e.target.value)}
+                value={settings.model.facialMood} 
+                onChange={(e) => handleModelUpdate('facialMood', e.target.value)}
                 className="w-full bg-gray-900 border border-gray-700 text-gray-200 text-xs rounded-lg p-2"
               >
-                {MODEL_ATTRIBUTES.makeup.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {FACIAL_MOODS.map(mood => (
+                  <option key={mood.value} value={mood.value}>{mood.label}</option>
+                ))}
               </select>
-
-               {/* Makeup Description Box */}
-               <div className="mt-2 p-2 bg-black/20 rounded border border-gray-700/50">
-                  <p className="text-[10px] text-gray-400 leading-relaxed">
-                    <span className="text-purple-400/80 font-semibold mr-1">스타일 특징:</span>
-                    {currentMakeup.description}
-                  </p>
-               </div>
             </div>
-
           </div>
         </div>
         )}
@@ -691,36 +674,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           </div>
         </div>
         
-        {/* NEW: Facial Expression Slider */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gray-300 font-semibold">
-              <Smile size={18} />
-              <h3>모델 표정 설정</h3>
-            </div>
-            <span className="text-xs text-rose-400 font-bold">
-              {getExpressionLabel(settings.facialExpression)} ({settings.facialExpression})
-            </span>
-          </div>
-          
-          <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-800">
-             <input 
-               type="range" 
-               min="0" 
-               max="100" 
-               step="10"
-               value={settings.facialExpression}
-               onChange={(e) => onUpdate({...settings, facialExpression: parseInt(e.target.value)})}
-               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
-             />
-             <div className="flex justify-between mt-2 text-[10px] text-gray-500">
-               <span>시크/무심(0)</span>
-               <span>내추럴 미소(50)</span>
-               <span>활기찬 웃음(100)</span>
-             </div>
-          </div>
-        </div>
-
         {/* Output Format (Grid Layout) */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-gray-300 font-semibold">

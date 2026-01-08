@@ -163,40 +163,46 @@ export const MODEL_ATTRIBUTES = {
     "좁은 어깨 (Narrow / Sloping) - 여리여리함 강조",
     "직각 어깨 (Square / Broad) - 옷걸이가 좋은 모델 체형",
     "라운드 숄더 (Rounded) - 부드러운 인상"
-  ],
-  makeup: [
-    { 
-      value: "K-Pop 아이돌 (Idol Stage Makeup)", 
-      label: "K-Pop 아이돌 (Idol Stage Makeup)", 
-      description: "글리터와 속눈썹을 강조하여 무대에서 빛나는 화려한 스타일입니다." 
-    },
-    { 
-      value: "내추럴 투명 메이크업 (Natural No-Makeup Look)", 
-      label: "내추럴 투명 메이크업 (Natural No-Makeup Look)", 
-      description: "피부 결을 살리고 색조를 최소화한 청순하고 깨끗한 스타일입니다." 
-    },
-    { 
-      value: "시크 스모키 (Chic Smoky)", 
-      label: "시크 스모키 (Chic Smoky)", 
-      description: "눈매를 깊고 진하게 강조하여 강렬하고 도시적인 분위기를 연출합니다." 
-    },
-    { 
-      value: "과즙 메이크업 (Fruity/Juicy)", 
-      label: "과즙 메이크업 (Fruity/Juicy)", 
-      description: "볼터치와 립에 생기를 주어 상큼하고 발랄한 이미지를 줍니다." 
-    },
-    { 
-      value: "배우 프로필 스타일 (Clean Actor Profile)", 
-      label: "배우 프로필 스타일 (Clean Actor Profile)", 
-      description: "이목구비의 장점을 자연스럽게 살린 단정하고 고급스러운 느낌입니다." 
-    },
-    { 
-      value: "하이패션 런웨이 (Avant-garde High Fashion)", 
-      label: "하이패션 런웨이 (Avant-garde High Fashion)", 
-      description: "예술적이고 실험적인 터치로 개성을 극대화한 모던한 스타일입니다." 
-    }
   ]
 };
+
+export const FACIAL_MOODS = [
+  {
+    value: "default",
+    label: "선택 안 함 (Default)",
+    prompt: ""
+  },
+  {
+    value: "cute",
+    label: "귀여운 (Lovely/Cute)",
+    prompt: "Adorably cute face, youthful features, round face shape, cheerful aura."
+  },
+  {
+    value: "chic",
+    label: "시크한 (Chic/Cold)",
+    prompt: "Icy chic, cool and sophisticated, sharp facial lines, unapproachable aura."
+  },
+  {
+    value: "pure",
+    label: "청순한 (Pure/Innocent)",
+    prompt: "Pure and innocent, transparent skin, soft features, serene and natural aura."
+  },
+  {
+    value: "elegant",
+    label: "우아한 (Elegant/Graceful)",
+    prompt: "Elegant and graceful, mature beauty, refined features, sophisticated and calm aura."
+  },
+  {
+    value: "hip",
+    label: "힙한 (Hip/Crush)",
+    prompt: "Hip and trendy, boyish charm, bold features, unique and cool charisma."
+  },
+  {
+    value: "alluring",
+    label: "고혹적인 (Alluring/Sexy)",
+    prompt: "Seductive and alluring, mature facial structure, captivating gaze, glamorous aura."
+  }
+];
 
 export const ANIMAL_FACE_SHAPES = [
   {

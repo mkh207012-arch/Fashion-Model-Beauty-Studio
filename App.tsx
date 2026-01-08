@@ -3,7 +3,7 @@ import { ControlPanel } from './components/ControlPanel';
 import { ImageViewer } from './components/ImageViewer';
 import { GenerationSettings, AspectRatio, GeneratedImage, ReferenceImage, StudioMode } from './types';
 import { generateImage, editImage, generateConsistentImage, generateFromReferences, extractOutfit, extractBackground, getApiKey } from './services/geminiService';
-import { CONCEPT_GROUPS, FASHION_POSES, CAMERA_ANGLES, MODEL_ATTRIBUTES, ANIMAL_FACE_SHAPES } from './constants';
+import { CONCEPT_GROUPS, FASHION_POSES, CAMERA_ANGLES, MODEL_ATTRIBUTES, ANIMAL_FACE_SHAPES, FACIAL_MOODS } from './constants';
 import { AlertCircle } from 'lucide-react';
 import { OutfitExtractor } from './components/OutfitExtractor';
 import { BackgroundExtractor } from './components/BackgroundExtractor';
@@ -25,11 +25,8 @@ const App: React.FC = () => {
       proportion: MODEL_ATTRIBUTES.proportion[3], // Default: Golden Ratio (황금 비율)
       shoulderWidth: MODEL_ATTRIBUTES.shoulderWidth[0], // Default: Select None
       faceShape: ANIMAL_FACE_SHAPES[0].items[0].id, // Default to Puppy
-      makeup: MODEL_ATTRIBUTES.makeup[3].value // Default: Fruity/Juicy (과즙 메이크업)
+      facialMood: FACIAL_MOODS[0].value, // Default: None
     },
-
-    // Facial Expression (0-100)
-    facialExpression: 50, // Default: Gentle Smile
 
     // Layout Settings
     layoutMode: 'profile_spread', // Default Mode

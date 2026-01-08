@@ -29,7 +29,7 @@ export interface ModelSettings {
   proportion: string; // New: Body Proportion (e.g., Long Legs)
   shoulderWidth: string; // New: Shoulder Width (e.g., Narrow, Square)
   faceShape: string; // Key for the animal face type
-  makeup: string;
+  facialMood: string; // New: Facial Mood/Vibe
 }
 
 export interface GenerationSettings {
@@ -39,9 +39,6 @@ export interface GenerationSettings {
   
   // Model Character Settings
   model: ModelSettings;
-
-  // New: Facial Expression Slider (0-100)
-  facialExpression: number;
 
   // Layout settings
   layoutMode: LayoutMode; // 'grid' or 'profile_spread'

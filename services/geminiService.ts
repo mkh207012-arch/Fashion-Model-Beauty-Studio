@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { GenerationSettings, LensConfig, ReferenceImage } from "../types";
-import { LENSES, ANIMAL_FACE_SHAPES } from "../constants";
+import { LENSES, ANIMAL_FACE_SHAPES, FACIAL_MOODS } from "../constants";
 
 const MODEL_NAME = "gemini-3-pro-image-preview";
 const LOCAL_STORAGE_KEY = "k_beauty_studio_api_key_v1";
@@ -106,6 +106,11 @@ function getFaceShapePrompt(faceShapeId: string): string {
   return "";
 }
 
+function getFacialMoodPrompt(moodId: string): string {
+  const mood = FACIAL_MOODS.find(m => m.value === moodId);
+  return mood ? mood.prompt : "";
+}
+
 /**
  * Generates a sophisticated body description based on interactions between height, body type, proportion, and shoulders.
  */
@@ -145,6 +150,9 @@ function getBodySynergyPrompt(height: string, bodyType: string, proportion: stri
   if (bodyType.includes("플러스")) {
      description += " Features: Curvy plus-size, soft silhouette, realistic body standards, voluminous beauty.";
   }
+  if (bodyType.includes("글래머러스")) {
+     description += " Features: Extremely voluptuous and curvy hourglass figure. Prominent large bust, very narrow waist, and wide hips. Emphasize deep curves and body volume. Sexy and bold silhouette.";
+  }
   if (isPear) {
      description += " Features: Pear-shaped, wide hips, thicker thighs, narrow shoulders, feminine lower body curve.";
   }
@@ -161,42 +169,27 @@ function getBodySynergyPrompt(height: string, bodyType: string, proportion: stri
   return description;
 }
 
-/**
- * Returns prompt keywords based on facial expression slider (0-100)
- */
-function getExpressionPrompt(value: number): string {
-  if (value <= 33) {
-    return "Expression: neutral expression, parted lips, high-fashion gaze, bored look, chic and indifferent.";
-  } else if (value <= 66) {
-    return "Expression: gentle smile, approachable, warm eyes, natural soft look, friendly atmosphere.";
-  } else {
-    return "Expression: bright laugh, joyful, vibrant energy, showing teeth, happy, wide smile.";
-  }
-}
-
 function getBaseStylePrompt(lens: LensConfig, settings?: GenerationSettings): string {
   let subjectDescription = "Professional female fashion model.";
-  let faceDetails = "Charming and attractive face, perfect makeup styling.";
+  let faceDetails = "Charming and attractive face.";
 
   if (settings && settings.model) {
-    const { gender, nationality, age, height, bodyType, proportion, shoulderWidth, faceShape, makeup } = settings.model;
+    const { gender, nationality, age, height, bodyType, proportion, shoulderWidth, faceShape, facialMood } = settings.model;
     const facePrompt = getFaceShapePrompt(faceShape);
     const bodyPrompt = getBodySynergyPrompt(height, bodyType, proportion, shoulderWidth);
-    
-    // Get Expression Prompt
-    const expressionPrompt = getExpressionPrompt(settings.facialExpression ?? 50);
+    const moodPrompt = getFacialMoodPrompt(facialMood);
 
     subjectDescription = `
       Professional Fashion Model.
       Demographics: ${nationality}, ${gender}, ${age}.
       ${bodyPrompt}
-      Styling: ${makeup}.
     `;
     
     faceDetails = `
       Detailed Facial Features:
       ${facePrompt}
-      ${expressionPrompt}
+      ${moodPrompt ? `Facial Mood & Vibe: ${moodPrompt}` : ""}
+      Styling Guidance: Create makeup and styling that perfectly compliments the ${faceShape} face type and ${facialMood} mood.
       High quality, detailed skin texture, expressive eyes.
     `;
   }
@@ -568,22 +561,19 @@ export const generateFromReferences = async (
   } else {
     modelInputDesc = `- No specific character reference images provided.`;
     // Use the Model Settings from Control Panel
-    const { gender, nationality, age, height, bodyType, proportion, shoulderWidth, faceShape, makeup } = settings.model;
+    const { gender, nationality, age, height, bodyType, proportion, shoulderWidth, faceShape, facialMood } = settings.model;
     const facePrompt = getFaceShapePrompt(faceShape);
     // Use the synergy logic here too for consistent descriptions in reference mode
     const bodyPrompt = getBodySynergyPrompt(height, bodyType, proportion, shoulderWidth);
+    const moodPrompt = getFacialMoodPrompt(facialMood);
     
-    // Get Expression Prompt for reference mode too
-    const expressionPrompt = getExpressionPrompt(settings.facialExpression ?? 50);
-
     characterInstruction = `
     1. CHARACTER GENERATION:
        - Generate a professional fashion model based on these attributes:
        - ${nationality}, ${gender}, ${age}.
        - ${bodyPrompt}
-       - Styling: ${makeup}.
        - Face: ${facePrompt}
-       - ${expressionPrompt}
+       ${moodPrompt ? `- Vibe: ${moodPrompt}` : ""}
     `;
   }
 
