@@ -216,7 +216,8 @@ function getGridPrompt(settings: GenerationSettings): string {
       2. CENTER SECTION: Full Body Frontal View. Standing confident pose. Show the full outfit clearly from head to toe.
       3. RIGHT SECTION: Full Body Back View. Standing pose showing the back of the outfit/hair.
       
-      CRITICAL CONSTRAINT: The character MUST be identical in all three shots (same face, same hair, same outfit, same body type).
+      CRITICAL CONSTRAINT 1: The character MUST be identical in all three shots (same face, same hair, same outfit, same body type).
+      CRITICAL CONSTRAINT 2: ABSOLUTELY NO TEXT, NO LABELS, NO WATERMARKS, NO TYPOGRAPHY ON THE IMAGE. PURE PHOTOGRAPHY ONLY.
       Background: Consistent studio background across all three sections.
      `;
   }
